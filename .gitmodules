@@ -1,0 +1,3 @@
+[submodule "references/mega-ed-pub"]
+	path = references/mega-ed-pub
+	url = https://github.com/krikzz/mega-ed-pub

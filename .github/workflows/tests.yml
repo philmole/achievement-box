@@ -1,0 +1,76 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-tests:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # The full daemon requirements, not just cryptography: the webapp
+      # regression tests (test_cd_session.py) import webapp itself, which
+      # needs fastapi/uvicorn/pyserial at import time.
+      - name: Install test dependencies
+        run: python -m pip install -r daemon/requirements.txt
+
+      - name: Verify shipped release artifacts
+        run: python daemon/check_integrity.py --shipped-only
+
+      - name: Run tests
+        run: python -m unittest discover -s daemon/tests -v
+
+  fpga-assemble:
+    name: FPGA overlay assembles
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository (with pinned submodule)
+        uses: actions/checkout@v6
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      # The patch ships only in the public snapshot; in the development
+      # repository (full vendored fpga/ tree) this step is a no-op.
+      - name: Assemble fpga tree from submodule + patch
+        if: hashFiles('fpga/patches/achievement-box.patch') != ''
+        run: python fpga/assemble.py
+
+  windows-native-smoke:
+    name: Shipped rcheevos DLL smoke test
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install native-test dependency
+        run: python -m pip install "cryptography>=42"
+
+      - name: Verify shipped release artifacts
+        run: python daemon/check_integrity.py --shipped-only
+
+      - name: Query mode from shipped rcheevos DLL
+        run: python -m unittest discover -s daemon/tests -p "test_rcheevos_native.py" -v

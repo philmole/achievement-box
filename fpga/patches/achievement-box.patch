@@ -1,0 +1,211 @@
+diff --git a/fpga/fpga_pro/map_smd/mega-pro.qsf b/fpga/fpga_pro/map_smd/mega-pro.qsf
+index 636b969..e7472b6 100644
+--- a/fpga/fpga_pro/map_smd/mega-pro.qsf
++++ b/fpga/fpga_pro/map_smd/mega-pro.qsf
+@@ -323,9 +323,11 @@ set_global_assignment -name ENABLE_BOOT_SEL_PIN OFF
+ set_location_assignment PIN_N1 -to MD_HRSTFn
+ set_location_assignment PIN_K2 -to DCLK
+ set_location_assignment PIN_AA1 -to FPG_GPIO[0]
+-set_global_assignment -name ENABLE_SIGNALTAP ON
+-set_global_assignment -name USE_SIGNALTAP_FILE stp1.stp
++set_global_assignment -name ENABLE_SIGNALTAP OFF
+ set_global_assignment -name SYSTEMVERILOG_FILE topcfg.sv
++set_global_assignment -name SYSTEMVERILOG_FILE ../../wram_sniffer.sv
++set_global_assignment -name SYSTEMVERILOG_FILE ../../pad_watch.sv
++set_global_assignment -name SYSTEMVERILOG_FILE ../../frame_watch.sv
+ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/map_smd/hub.sv
+ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/map_smd/map_smd.sv
+ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/map_smd/map_cdb.sv
+@@ -347,6 +349,5 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/lib_base/audio_out.s
+ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/lib_bram/srm_smd.sv
+ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/lib_bram/ram_cart.sv
+ set_global_assignment -name SYSTEMVERILOG_FILE ../../mapper/lib_bram/eep_24x.sv
+-set_global_assignment -name SIGNALTAP_FILE stp1.stp
+ set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
+-set_global_assignment -name SLD_FILE db/stp1_auto_stripped.stp
+\ No newline at end of file
++set_global_assignment -name SLD_FILE db/stp1_auto_stripped.stp
+diff --git a/fpga/mapper/lib_base/everdrive.sv b/fpga/mapper/lib_base/everdrive.sv
+index a1121bf..e85bb89 100644
+--- a/fpga/mapper/lib_base/everdrive.sv
++++ b/fpga/mapper/lib_base/everdrive.sv
+@@ -321,12 +321,24 @@ module everdrive(
+ //************************************************************************************* rst ctrl
+ 	wire rst_hold;
+ 	wire sys_rst;
+-	
++
++	//RA: Start+Down acts exactly like the cart button -- menu return rides
++	//krikzz's own public reset machinery (rst_ctrl + OS reset-to-menu)
++	wire ra_combo_hit;
++
++	pad_watch ra_pad_inst(
++
++		.clk(mai.clk),
++		.rst(mai.map_rst),
++		.cpu(mai.cpu),
++		.combo_hit(ra_combo_hit)
++	);
++
+ 	rst_ctrl rst_inst(
+-	
++
+ 		.clk(mai.clk),
+ 		.rst(rst),
+-		.btn(mai.btn),
++		.btn(mai.btn | ra_combo_hit),
+ 		.sms_mode(cfg.ct_sms),
+ 		.x32_mode(cfg.ct_32x),
+ 		.hrst(hrst),
+diff --git a/fpga/mapper/map_smd/hub.sv b/fpga/mapper/map_smd/hub.sv
+index 1f36a5d..fa038bf 100644
+--- a/fpga/mapper/map_smd/hub.sv
++++ b/fpga/mapper/map_smd/hub.sv
+@@ -8,24 +8,114 @@ module map_hub(
+ 	input  MapIn mai,
+ 	output MapOut mao
+ );
+-	
+-	
+-	assign mao = 
+-	mai.cfg.map_idx == `MAP_SMD  ? mout_smd : 
++
++
++	MapOut mout_sel;
++
++	assign mout_sel =
++	mai.cfg.map_idx == `MAP_SMD  ? mout_smd :
+ 	mai.cfg.map_idx == `MAP_CDB  ? mout_cdb :
+ 	mai.cfg.map_idx == `MAP_10M  ? mout_smd :
+ 										    mout_nom;
+-	
+-	
++
++
+ 	MapOut mout_nom;
+ 	map_nom nom_inst(mai, mout_nom);
+-	
++
+ 	MapOut mout_smd;
+ 	map_smd smd_inst(mai, mout_smd);
+-	
++
+ 	MapOut mout_cdb;
+ 	map_cdb cdb_inst(mai, mout_cdb);
+-	
+ 
+-	
++//************************************************************************************* wram sniffer. RA shadow: replays console wram writes into sram at 0x40000+, pi reads shadow at 0x1040000
++
++	wire snif_req;
++	wire [22:0]snif_addr;
++	wire [15:0]snif_data;
++	wire snif_we_hi, snif_we_lo, snif_grant;
++	wire [15:0]drop_count;
++
++	wram_sniffer snif_inst(
++
++		.clk(mai.clk),
++		.rst(mai.map_rst),
++		.cpu(mai.cpu),
++		.pi_act(mai.pi.act),
++
++		.req(snif_req),
++		.req_addr(snif_addr),
++		.req_data(snif_data),
++		.req_we_hi(snif_we_hi),
++		.req_we_lo(snif_we_lo),
++		.grant(snif_grant),
++
++		.drop_count(drop_count)
++	);
++
++//************************************************************************************* pad combo watch. IGM-lite: daemon polls pi 0x183ff06, on Start+Down exits to menu
++
++	wire combo_hit;
++	wire [7:0]pad_last_sample;
++	wire [7:0]region_sample;
++	wire region_valid;
++
++	pad_watch pad_inst(
++
++		.clk(mai.clk),
++		.rst(mai.map_rst),
++		.cpu(mai.cpu),
++		.combo_hit(combo_hit),
++		.last_sample(pad_last_sample),
++		.region_sample(region_sample),
++		.region_valid(region_valid)
++	);
++
++//************************************************************************************* frame watch. counts vblank vector fetches ($000078) so the daemon can spot a mid-game NTSC/PAL switch flip
++
++	wire [7:0]vint_count;
++
++	frame_watch frame_inst(
++
++		.clk(mai.clk),
++		.rst(mai.map_rst),
++		.cpu(mai.cpu),
++		.vint_count(vint_count)
++	);
++
++	MemCtrl sram_arb;
++
++	sram_arbiter arb_inst(
++
++		.map_sram(mout_sel.sram),
++		.snif_req(snif_req),
++		.snif_addr(snif_addr),
++		.snif_data(snif_data),
++		.snif_we_hi(snif_we_hi),
++		.snif_we_lo(snif_we_lo),
++		.snif_grant(snif_grant),
++		.sram_out(sram_arb)
++	);
++
++	//splice arbiter into sram path. mcfg page: 0xff00-03 wram write
++	//counter (map_smd), 04-05 drops, 06 combo, 07 pad, 08 region,
++	//09 region-valid, 0a vblank vector-fetch counter (frame_watch).
++	always_comb begin
++		mao = mout_sel;
++		mao.sram = sram_arb;
++		if(mai.pi.map.ce_mcfg)begin
++			case(mai.pi.addr[3:0])
++			4'd4: mao.pi_di[7:0] = drop_count[7:0];
++			4'd5: mao.pi_di[7:0] = drop_count[15:8];
++			4'd6: mao.pi_di[7:0] = {7'd0, combo_hit};
++			4'd7: mao.pi_di[7:0] = pad_last_sample;
++			4'd8: mao.pi_di[7:0] = region_sample;
++			4'd9: mao.pi_di[7:0] = {7'd0, region_valid};
++			4'd10: mao.pi_di[7:0] = vint_count;
++			default: ;
++			endcase
++		end
++	end
++
++
+ endmodule
+diff --git a/fpga/mapper/map_smd/map_smd.sv b/fpga/mapper/map_smd/map_smd.sv
+index 66a285c..1e69e02 100644
+--- a/fpga/mapper/map_smd/map_smd.sv
++++ b/fpga/mapper/map_smd/map_smd.sv
+@@ -46,6 +46,18 @@ module map_smd(
+ 
+ 	assign mao.led_r = srm.led | eep.led;
+ 	//assign mao.led_g	= 1;
++//************************************************************************************* wram write counter. RA sniffer bring-up step 1: proves passive capture decode+polarity. pi reads 4 bytes at 0x183ff00
++
++	bit [31:0]wr_count;
++
++	always @(posedge mai.clk)
++	begin
++		if(mai.map_rst)wr_count <= 0;
++			else
++		if(cpu.we_ck & cpu.addr[23:21] == 3'b111)wr_count <= wr_count + 1'd1;
++	end
++
++	assign mao.pi_di[7:0] = wr_count[{mai.pi.addr[1:0], 3'd0} +: 8];//byte 0 = lsb
+ //************************************************************************************* bram mappin
+ 	wire brm_bus_oe 			= eep.bus_oe | srm.bus_oe;
+ 	wire [15:0]brm_bus_do	= eep.bus_oe ? eep.dato : srm.dato;

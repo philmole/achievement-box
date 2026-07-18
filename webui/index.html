@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Achievement Box</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0b0c0f">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🏆</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- THE SCREEN = the whole UI; it fills the visible viewport. -->
+<div class="screen hasgame" id="screen">
+        <div class="backdrop" id="backdrop"></div>
+
+        <!-- ===== LIBRARY (default) ===== -->
+        <div class="scr active" id="scr-lib">
+          <div class="scrhead">
+            <div class="scrhead-txt">
+              <div class="scrtitle" id="lib-title">Game library</div>
+              <div class="scrsub" id="lib-sub">Pick a game to launch</div>
+            </div>
+            <button class="back nowplaying hidden" id="back-game">Now playing ▸</button>
+            <button class="bell" id="bell" title="Unlock notifications">🔔</button>
+            <label class="switch" id="switch" title="Achievements mode">
+              <input type="checkbox" id="toggle-input">
+              <span class="track"><span class="thumb"></span></span>
+              <span class="swlabel" id="swlabel">RA</span>
+            </label>
+          </div>
+          <div class="scrbar">
+            <div class="filterbar" id="filterbar"></div>
+            <button class="refresh" id="refresh">↻ Rescan</button>
+          </div>
+          <div class="notice" id="msg"></div>
+          <div class="grid" id="grid"></div>
+        </div>
+
+        <!-- ===== GAME / ACHIEVEMENTS ===== -->
+        <div class="scr" id="scr-game">
+          <div class="statusbar">
+            <button class="back" id="change-game">◂ Games</button>
+            <span class="chip console-chip">
+              <img class="console-icon" src="/media/system/md" alt="">
+              <span id="gmeta">Mega Drive</span>
+            </span>
+            <span class="chip mode-chip casual connected" id="ra-mode-chip"
+                  role="status"
+                  aria-label="RetroAchievements connected, Casual mode">
+              <span class="dot g"></span><span id="chip-console">RA &middot; CASUAL</span>
+            </span>
+          </div>
+          <div class="gamehead">
+            <div class="art"><img id="art" src="" alt=""></div>
+            <div class="gh-txt">
+              <div class="gtitle" id="gtitle"></div>
+              <div class="presence hidden" id="presence">
+                <span>Now playing</span>
+                <strong id="presence-text"><b id="presence-run"></b></strong>
+              </div>
+            </div>
+          </div>
+          <div class="cd-game-note hidden" id="cd-game-note">
+            <strong>Achievements aren't available for Mega CD</strong>
+            <span>Achievement Box will reconnect when you quit to the EverDrive menu.</span>
+          </div>
+          <div class="achhead" id="achhead">
+            <div class="progress">
+              <div class="prow"><span id="pcount"></span><span id="ppts"></span></div>
+              <div class="bar"><i id="pbar"></i></div>
+            </div>
+            <div class="achtools">
+              <div class="achfilter" id="achfilter">
+                <button data-f="all" class="on">All</button>
+                <button data-f="locked">Locked</button>
+                <button data-f="unlocked">Unlocked</button>
+              </div>
+              <button class="expand" id="expand" title="Expand list" aria-label="Expand achievement list"></button>
+            </div>
+          </div>
+          <div class="achscroll" id="achrows"></div>
+        </div>
+
+        <!-- ===== LAUNCH LOADING (spinning 3D box) ===== -->
+        <div class="scr" id="scr-loading">
+          <div class="loadwrap">
+            <div class="bigboxwrap" id="loadbox"></div>
+            <div class="loadtxt">
+              <div class="k">Launching</div>
+              <div class="n" id="load-title"></div>
+              <div class="p" id="load-sub">Resetting console…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== Mega CD launch modal (brief spinning disc, auto-dismiss) ===== -->
+        <div id="cdlaunch" class="hidden">
+          <div class="cdcard">
+            <div class="discwrap big" id="cd-disc"></div>
+            <div class="loadtxt">
+              <div class="k">Launching</div>
+              <div class="n" id="cd-title"></div>
+              <div class="p">Mega CD — reconnects when you quit</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== game modal (tap a game; long-press launches directly) ===== -->
+        <div id="modal" class="hidden">
+          <div class="mcard">
+            <div class="mmain">
+              <div class="flatbox mbox"><img id="m-cover" src="" alt=""></div>
+              <div class="mtxt">
+                <div class="msys" id="m-sys"></div>
+                <div class="mtitle" id="m-title"></div>
+                <div class="mmeta" id="m-meta"></div>
+              </div>
+              <button class="mclose" id="m-close">✕</button>
+            </div>
+            <div class="mdetails hidden" id="m-details">
+              <div class="mediawrap">
+                <div class="mediarow" id="m-media"></div>
+                <button class="mnav prev hidden" id="m-prev" aria-label="Previous">‹</button>
+                <button class="mnav next hidden" id="m-next" aria-label="Next">›</button>
+              </div>
+              <div id="m-dots"></div>
+              <p class="mdesc" id="m-desc"></p>
+            </div>
+            <div class="mnote" id="m-note"></div>
+            <div class="mbtns">
+              <button class="mbtn gold" id="m-launch">▶ Launch</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- manual fullscreen (hidden while fullscreen is active) -->
+        <button class="fs-fab hidden" id="fs-btn" title="Fullscreen"
+                aria-label="Enter fullscreen">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>
+          </svg>
+        </button>
+
+        <div id="toast">
+          <div class="rays"></div>
+          <div class="medal"><img id="tmedal" src="" alt=""></div>
+          <div class="toast-copy">
+            <div class="k">Achievement unlocked</div>
+            <div class="n" id="tname"></div>
+            <div class="p" id="tpts"></div>
+          </div>
+        </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

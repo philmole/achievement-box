@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "version_source": "daemon/achievementbox/version.py",
+  "components": {
+    "rcheevos": {
+      "path": "daemon/lib/rcheevos.dll",
+      "sha256": "e4ae516d211fefc7af1d31dc4cf59386afc27a113ba8a1250b54a6f2c95a7ab4",
+      "shipped": true,
+      "source": "RetroAchievements/rcheevos 12.3"
+    },
+    "mega_pro_rbf": {
+      "path": "fpga/prebuilt/mega-pro.rbf",
+      "sha256": "25b306df8f7a5b24ff8060b329dd2bd4a543cc52e97628b5e2f0d01a4333f731",
+      "shipped": true,
+      "source": "Achievement Box Quartus build (pad_watch.sv boot-guard fix, 2026-07-17)"
+    },
+    "edlink": {
+      "path": "references/mega-ed-pub/edlink.exe",
+      "sha256": "3069781889bad1e6d6e4b9516626fd9a362a8bf06fc16d3d33141daf2659da20",
+      "shipped": false,
+      "source": "https://github.com/krikzz/mega-ed-pub"
+    }
+  }
+}

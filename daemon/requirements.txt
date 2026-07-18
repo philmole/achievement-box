@@ -1,0 +1,8 @@
+# Achievement Box daemon + web UI
+pyserial>=3.5
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pywebpush>=1.14
+cryptography>=42  # certs, VAPID keys, encrypted offline RA submissions
+zeroconf>=0.130
+qrcode>=7.4

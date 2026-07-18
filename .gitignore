@@ -1,0 +1,49 @@
+# Reference clones — external repos, not ours to commit
+references/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Quartus build output
+fpga/**/db/
+fpga/**/incremental_db/
+fpga/**/output_files/
+*.rbf
+*.sof
+*.qws
+# ...except the one hardware-verified core we ship so the MD path is turnkey
+!fpga/prebuilt/mega-pro.rbf
+
+# Node / webui build
+node_modules/
+dist/
+
+# OS noise
+Thumbs.db
+.DS_Store
+
+# rc_client debug artifacts
+patch_dump.json
+
+# RA credentials (see daemon/.env.example)
+daemon/.env
+
+# web/daemon cache (badges, box art, OpenVGDB, library index)
+daemon/cache/
+daemon/webapp-crash.log
+
+# Playwright visual-check scratch output
+.playwright-mcp/
+abox-*.png
+
+# stray MSVC objects from the rcheevos DLL build
+*.obj
+
+# Backups, logs, raw dumps, EverDrive recent-ROM lists (never ship these)
+*.bak
+*.rbf.bak
+*.log
+*.bin
+registery.dat*

@@ -1,0 +1,89 @@
+Achievement Box
+Copyright (C) 2026 philmole
+
+This program is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License v3.0 as published by the
+Free Software Foundation. See the LICENSE file for the full text.
+
+The GPLv3 covers the ORIGINAL work in this repository (the daemon, the web
+UI, and the original gateware listed below). It does not, and cannot,
+relicense the third-party components described here — those retain the terms
+of their respective authors.
+
+================================================================================
+THIRD-PARTY COMPONENTS
+================================================================================
+
+--------------------------------------------------------------------------------
+1. Mega EverDrive PRO/CORE development sources and derived RBF — krikzz
+   Upstream: https://github.com/krikzz/mega-ed-pub
+--------------------------------------------------------------------------------
+The shipped Mega Drive mapper is built on krikzz's "Mega EverDrive PRO/CORE
+Dev Sources", published as libraries, tools and examples for mapper
+developers. Rather than copying those sources here, this repository
+references upstream as the pinned `references/mega-ed-pub` Git submodule;
+`fpga/assemble.py` copies the required files from it locally and applies this
+project's modifications from `fpga/patches/achievement-box.patch`. The
+assembled files are gitignored, are NOT relicensed under this project's
+GPLv3, and remain subject to any terms set by krikzz.
+
+The distributed `fpga/prebuilt/mega-pro.rbf` is an Achievement Box build, not a
+binary published by krikzz. It combines the credited Mega EverDrive base and
+mapper design with Achievement Box's original WRAM sniffer, telemetry,
+controller and console-region logic. Its SHA-256 identity is recorded in
+`release-integrity.json`, and its contents and rebuild procedure are
+documented in `fpga/RBF-CONTENTS.md` and `fpga/README.md`.
+
+  Original work by THIS project (GPLv3):
+    fpga/wram_sniffer.sv
+    fpga/pad_watch.sv
+    fpga/frame_watch.sv
+    fpga/assemble.py
+
+  krikzz files carrying modifications by this project, shipped only as a
+  patch (fpga/patches/achievement-box.patch) against the pinned submodule:
+    fpga/mapper/lib_base/everdrive.sv
+    fpga/mapper/map_smd/hub.sv
+    fpga/mapper/map_smd/map_smd.sv
+    fpga/fpga_pro/map_smd/mega-pro.qsf
+
+  All other files the Quartus project needs are unmodified krikzz
+  dependencies, assembled locally from the submodule and never committed.
+
+--------------------------------------------------------------------------------
+2. rcheevos — RetroAchievements
+   Upstream: https://github.com/RetroAchievements/rcheevos
+   License:  MIT
+--------------------------------------------------------------------------------
+This project links the rcheevos achievement-evaluation library, shipped here as
+a prebuilt binary (`daemon/lib/rcheevos.dll`). rcheevos is used under
+the MIT License:
+
+    Copyright (c) 2018 RetroAchievements.org
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the "Software"),
+    to deal in the Software without restriction, including without limitation
+    the rights to use, copy, modify, merge, publish, distribute, sublicense,
+    and/or sell copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+    DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+3. edlink.exe — krikzz USB link tool (external pinned submodule)
+   Upstream: https://github.com/krikzz/mega-ed-pub
+--------------------------------------------------------------------------------
+The daemon shells out to krikzz's edlink.exe for USB communication with the
+cart. The public repository pins its upstream repository as the
+`references/mega-ed-pub` Git submodule; `edlink.exe` is not copied or relicensed
+as an Achievement Box file. `MED_EDLINK` may point to another checkout.

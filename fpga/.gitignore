@@ -1,0 +1,28 @@
+# Assembled krikzz upstream sources (created by assemble.py from the
+# references/mega-ed-pub submodule). Not this project's code --
+# never commit them here.
+/fpga_pro/clocks.sdc
+/fpga_pro/hwc.sv
+/fpga_pro/top.sv
+/fpga_pro/map_smd/mega-pro.qpf
+/fpga_pro/map_smd/topcfg.sv
+/mapper/lib_base/audio_out.sv
+/mapper/lib_base/base_io.sv
+/mapper/lib_base/defs.sv
+/mapper/lib_base/dma.sv
+/mapper/lib_base/map_nom.sv
+/mapper/lib_base/map_sys.sv
+/mapper/lib_base/mdp.sv
+/mapper/lib_base/pi.sv
+/mapper/lib_base/pi_map.sv
+/mapper/lib_base/structs.sv
+/mapper/lib_base/sys_cfg.sv
+/mapper/lib_base/var.sv
+/mapper/lib_bram/eep_24x.sv
+/mapper/lib_bram/ram_cart.sv
+/mapper/lib_bram/srm_smd.sv
+/mapper/map_smd/map_cdb.sv
+/fpga_pro/map_smd/mega-pro.qsf
+/mapper/lib_base/everdrive.sv
+/mapper/map_smd/hub.sv
+/mapper/map_smd/map_smd.sv
