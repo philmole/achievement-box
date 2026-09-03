@@ -61,12 +61,21 @@ class MemoryBackend(ABC):
         self.close()
 
 
+# mono writes a UTF-8 BOM on the first write to a redirected stream;
+# .NET on Windows does not. It arrives ahead of edlink's own output.
+UTF8_BOM = b"\xef\xbb\xbf"
+
+
 class EdlinkSession:
     """Persistent `edlink .stdio` session.
 
     Response framing (probed empirically, edlink v1.0.0.1): for
     `memrd ... --file -`, stdout carries an ASCII decimal byte-count line
     terminated by \\n, then exactly that many raw payload bytes.
+
+    edlink also announces itself with a one-line version banner when the
+    session starts, so the first response is preceded by one extra line
+    (plus mono's BOM on Linux). _read_count consumes it.
     """
 
     def __init__(self, edlink_exe: str | Path):
@@ -98,7 +107,7 @@ class EdlinkSession:
         watchdog.daemon = True
         watchdog.start()
         try:
-            stated = int(self._readline())
+            stated = self._read_count()
             data = self._proc.stdout.read(stated)
         finally:
             watchdog.cancel()
@@ -132,6 +141,21 @@ class EdlinkSession:
             last = size
         raise IOError(f"cp of sd:/{sd_path} did not complete")
 
+    def _read_count(self) -> int:
+        """Byte-count line that opens a memrd response.
+
+        The startup banner is skipped before the first response and only
+        there. Hunting for a number on later reads would resynchronise
+        onto payload bytes and silently return misaligned memory -- so
+        once framing is established, anything unparseable is an error.
+        """
+        line = self._readline()
+        if not self._connected and not line.isdigit():
+            line = self._readline()
+        if not line.isdigit():
+            raise IOError(f"edlink sent no byte count, got {line!r}")
+        return int(line)
+
     def _readline(self) -> str:
         line = b""
         while not line.endswith(b"\n"):
@@ -139,7 +163,11 @@ class EdlinkSession:
             if not ch:
                 raise IOError("edlink stdio session closed unexpectedly")
             line += ch
-        return line.decode("ascii").strip()
+        if line.startswith(UTF8_BOM):
+            line = line[len(UTF8_BOM):]
+        # never raise on a stray byte here: _read_count validates, and a
+        # decode error would mask the actual framing problem.
+        return line.decode("ascii", "replace").strip()
 
     def close(self) -> None:
         # Best-effort cleanup: the read watchdog above can already have

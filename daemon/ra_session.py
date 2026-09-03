@@ -19,7 +19,8 @@ daemon/.env (KEY=VALUE lines; see .env.example). No CLI args: passwords
 on a command line land in shell history and the process list.
 
 Usage:
-  python ra_session.py [--port COM5]
+  python ra_session.py [--port PORT]   (COM5 on Windows, /dev/ttyACM0 on
+                                       Linux; omit to autodetect the cart)
 """
 
 import argparse

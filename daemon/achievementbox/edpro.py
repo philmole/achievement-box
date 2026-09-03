@@ -99,7 +99,7 @@ def find_cart_port(preferred: str | None = None) -> str | None:
 
 
 class EdProSerial:
-    def __init__(self, port: str = "COM5", timeout: float = 3.0):
+    def __init__(self, port: str, timeout: float = 3.0):
         self._s = serial.Serial(port, 115200, timeout=timeout)
 
     def close(self):

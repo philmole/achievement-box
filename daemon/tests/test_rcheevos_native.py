@@ -1,4 +1,10 @@
-"""Smoke test for the actual shipped Windows rcheevos DLL."""
+"""Smoke test for the actual native rcheevos library of this platform.
+
+Windows uses the shipped MSVC rcheevos.dll; Linux uses librcheevos.so
+built locally by daemon/lib/build_rcheevos.sh. rcbridge.DLL_PATH already
+resolves to whichever applies, so the test follows it rather than
+naming a platform.
+"""
 
 from __future__ import annotations
 
@@ -13,10 +19,10 @@ sys.path.insert(0, str(DAEMON_DIR))
 from achievementbox.rcbridge import DLL_PATH, RcClient  # noqa: E402
 
 
-@unittest.skipUnless(sys.platform == "win32" and DLL_PATH.is_file(),
-                     "requires the shipped Windows rcheevos.dll")
-class ShippedRcheevosNativeTest(unittest.TestCase):
-    def test_actual_dll_is_created_in_casual_mode(self):
+@unittest.skipUnless(DLL_PATH.is_file(),
+                     f"requires the native rcheevos library at {DLL_PATH}")
+class NativeRcheevosLibraryTest(unittest.TestCase):
+    def test_native_library_creates_client_in_casual_mode(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             client = RcClient(
                 lambda _address, length: bytes(length),

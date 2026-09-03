@@ -54,6 +54,29 @@ jobs:
         if: hashFiles('fpga/patches/achievement-box.patch') != ''
         run: python fpga/assemble.py
 
+  linux-native-smoke:
+    name: Built rcheevos .so smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install native-test dependency
+        run: python -m pip install "cryptography>=42"
+
+      # Without this the native test skips on Linux, so the python-tests
+      # job above never actually exercises the ctypes bridge there.
+      - name: Build librcheevos.so from the pinned upstream tag
+        run: daemon/lib/build_rcheevos.sh
+
+      - name: Load the built library and query mode
+        run: python -m unittest discover -s daemon/tests -p "test_rcheevos_native.py" -v
+
   windows-native-smoke:
     name: Shipped rcheevos DLL smoke test
     runs-on: windows-latest

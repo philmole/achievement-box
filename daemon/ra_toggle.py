@@ -8,7 +8,10 @@ for every launch from that folder, so the mode switch is just that file:
   OFF: renamed to mapper.rbf.bk          -> factory core, full IGM
 
 Usage:
-  python ra_toggle.py status|on|off [--dir "MEGA DRIVE"] [--port COM5]
+  python ra_toggle.py status|on|off [--dir "MEGA DRIVE"] [--port PORT]
+
+`--port` takes COM5 on Windows or /dev/ttyACM0 on Linux; omit it to
+autodetect the cart.
 
 `on` uploads our built core if neither file exists yet.
 """
@@ -160,7 +163,7 @@ def main():
         from achievementbox.edpro import find_cart_port
         found = find_cart_port()
         if not found:
-            raise SystemExit("no Mega EverDrive Pro found; pass --port COMx")
+            raise SystemExit("no Mega EverDrive Pro found; pass --port")
         args.port = found
 
     with EdProSerial(args.port) as dev:

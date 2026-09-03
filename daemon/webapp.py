@@ -17,7 +17,9 @@ Badges and box art are cached on disk after first fetch so WiFi blips
 never blank the UI.
 
 Usage:
-  .venv\\Scripts\\python daemon\\webapp.py [--port COM5] [--http 8000]
+  Windows: .venv\\Scripts\\python daemon\\webapp.py [--port PORT] [--http 8000]
+  Linux:   .venv/bin/python daemon/webapp.py [--port PORT] [--http 8000]
+  (--port is COM5 or /dev/ttyACM0; omit it to autodetect the cart)
   (RA_USER/RA_PASS from environment or daemon/.env, as ra_session)
 
 Do NOT run ra_session.py at the same time -- this replaces it.

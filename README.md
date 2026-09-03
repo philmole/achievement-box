@@ -91,7 +91,9 @@ PWA.
 ## Quickstart
 
 Clone with the pinned USB-tool submodule, create a virtual environment and
-install the daemon dependencies:
+install the daemon dependencies.
+
+**Windows:**
 
 ```powershell
 git clone --recurse-submodules https://github.com/philmole/achievement-box
@@ -101,22 +103,56 @@ python -m venv .venv
 copy daemon\.env.example daemon\.env
 ```
 
-Edit `daemon\.env` and set `RA_USER`, `RA_PASS` and `MD_ROM_DIR`. Credentials
+**Linux:**
+
+```bash
+git clone --recurse-submodules https://github.com/philmole/achievement-box
+cd achievement-box
+python -m venv .venv
+.venv/bin/pip install -r daemon/requirements.txt
+cp daemon/.env.example daemon/.env
+daemon/lib/build_rcheevos.sh
+```
+
+Linux needs two things Windows gets prebuilt. First, the **rcheevos shared
+library**: Windows ships `daemon/lib/rcheevos.dll`, while
+`daemon/lib/build_rcheevos.sh` builds `daemon/lib/librcheevos.so` from the
+pinned upstream tag with `gcc` (needs `gcc` and `git`). Because you build it
+locally, it is not hash-pinned in `release-integrity.json` the way the shipped
+DLL is. Second, **mono**, to run krikzz's `edlink.exe` — a .NET assembly — for
+the work-RAM reads (`pacman -S mono` on Arch, `apt install mono-runtime` on
+Debian/Ubuntu). Your user also needs read/write access to the cart's USB
+serial device: that is the `uucp` group on Arch and `dialout` on Debian/Ubuntu.
+
+Edit `daemon/.env` and set `RA_USER`, `RA_PASS` and `MD_ROM_DIR`. Credentials
 remain local and the file is ignored by Git. Then start the supervised server:
 
 ```powershell
 .venv\Scripts\python daemon\serve.py
 ```
 
+```bash
+.venv/bin/python daemon/serve.py
+```
+
 Open one of the printed URLs on a browser on the same trusted LAN. Set a unique
 `WEB_PASSWORD` of at least 12 characters if other LAN users should not be able
 to launch games or change the mapper; authenticated LAN access uses HTTPS.
+
+On Linux the daemon advertises `achievementbox.local` over mDNS as usual, and
+phones, tablets and other machines resolve it with their own mDNS stacks. The
+host running the daemon may not resolve its own `.local` name, though: many
+distributions ship an `/etc/nsswitch.conf` whose `hosts:` line stops at
+`resolve [!UNAVAIL=return]` and so never reaches `nss-mdns`. That affects only
+browsing from the daemon's own machine — use one of the printed IP URLs there,
+or add `mdns4_minimal [NOTFOUND=return]` ahead of `resolve` in `nsswitch.conf`.
 
 The Mega Drive path uses krikzz's `edlink.exe` from the
 [`references/mega-ed-pub`](references/mega-ed-pub) submodule (already present
 after the clone above; if you skipped `--recurse-submodules`, run
 `git submodule update --init`). No `MED_EDLINK` setting is needed at the
-default submodule path. The prebuilt FPGA core is included in
+default submodule path; on Linux it is invoked through `mono`, exactly as
+krikzz's own `edlink.py` wrapper does. The prebuilt FPGA core is included in
 `fpga/prebuilt/` — turn the library's **RA on** switch on to stage it in the
 configured games folder for the next launch — and it can be rebuilt from
 source; see [fpga/README.md](fpga/README.md).

@@ -41,6 +41,12 @@ abox-*.png
 # stray MSVC objects from the rcheevos DLL build
 *.obj
 
+# locally built rcheevos shared library + its scratch clone (see
+# daemon/lib/build_rcheevos.sh). Windows ships a prebuilt DLL; every other
+# platform builds its own, so the binary is never committed.
+daemon/lib/librcheevos.so
+daemon/lib/build/
+
 # Backups, logs, raw dumps, EverDrive recent-ROM lists (never ship these)
 *.bak
 *.rbf.bak
